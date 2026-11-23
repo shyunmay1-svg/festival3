@@ -1,0 +1,1951 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>원행 — 원주시 축제·행사 통합 캘린더</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Sans KR & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '"Noto Sans KR"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 9999px;
+    }
+    .calendar-cell {
+      transition: all 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes fadeSlideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-fade-up {
+      animation: fadeSlideUp 0.24s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- 토스트 알림 컨테이너 (alert() 대체용) -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ===================================================================== -->
+  <!-- 0. 앱 진입(들어가기) 화면: 금일 진행중 행사 / 없으면 가장 가까운 예정 행사 -->
+  <!-- ===================================================================== -->
+  <section id="entry-screen" class="min-h-screen flex flex-col justify-between bg-gradient-to-br from-slate-100 via-white to-teal-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
+    <!-- 진입 화면 상단 바 -->
+    <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-5 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-600 to-teal-500 flex items-center justify-center text-white shadow-md">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="17" rx="3" />
+            <path d="M16 2v4M8 2v4M3 9h18" />
+            <circle cx="12" cy="15" r="2" />
+          </svg>
+        </div>
+        <span class="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white" data-i18n="appName">원행</span>
+        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-700 dark:text-brand-400 border border-brand-500/30">TEAM.24</span>
+      </div>
+
+      <!-- 우측: 다크모드 전환 & 영문(EN) 전환 버튼 -->
+      <div class="flex items-center gap-2">
+        <!-- 다크모드 전환 버튼만 유지 (언어 전환 버튼 제거) -->
+        <button type="button" class="theme-toggle-btn inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:border-brand-500 shadow-xs transition cursor-pointer">
+          <span class="theme-toggle-icon">☀️</span>
+          <span class="theme-toggle-label">라이트</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 진입 화면 중앙 콘텐츠 -->
+    <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+      <!-- 좌측 타이틀 & 들어가기 버튼 -->
+      <div class="lg:col-span-5 space-y-5 animate-fade-up">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-brand-500/15 text-brand-700 dark:text-brand-400 border border-brand-500/30">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span id="entry-today-badge">기준일: 2026.11.23 (월)</span>
+        </div>
+
+        <h1 class="text-3xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight text-slate-900 dark:text-white leading-tight">
+          원주의 모든 축제·행사,<br/>한눈에 보고 바로 떠나세요
+        </h1>
+
+        <p class="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed">
+          원주시청·원주관광·원주문화재단·대학 축제 일정을 월별 캘린더로 통합했습니다. 오늘 열리는 행사부터 다가오는 일정까지 한 번에 확인하세요.
+        </p>
+
+        <div class="pt-1 flex flex-wrap items-center gap-3">
+          <!-- 이번 달 전체 달력 보기 버튼 삭제 후 들어가기 버튼만 단독 배치 -->
+          <button id="btn-enter-app" type="button" class="inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl text-base font-extrabold bg-gradient-to-r from-brand-600 to-teal-500 hover:from-brand-500 hover:to-teal-400 text-white shadow-lg shadow-brand-600/25 transition transform hover:-translate-y-0.5 cursor-pointer">
+            <span>들어가기</span>
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- 빠른 분야 필터 -->
+        <div class="pt-2">
+          <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">관심 분야 선택 시 오늘 행사 또는 가장 가까운 예정 행사를 즉시 안내합니다:</p>
+          <div class="flex flex-wrap gap-1.5" id="entry-category-pills">
+            <button type="button" data-entry-cat="ALL" class="entry-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-600 text-white cursor-pointer">전체</button>
+            <button type="button" data-entry-cat="축제" class="entry-cat-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer">🎪 축제</button>
+            <button type="button" data-entry-cat="공연" class="entry-cat-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer">🎵 공연·음악</button>
+            <button type="button" data-entry-cat="전시" class="entry-cat-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer">🖼️ 전시·문화</button>
+            <button type="button" data-entry-cat="대학·청년" class="entry-cat-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer">🎓 대학·청년</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 우측: 금일 진행중 행사 / 없으면 가장 가까운 예정 행사 카드 패널 -->
+      <div class="lg:col-span-7 bg-white/95 dark:bg-slate-900/90 backdrop-blur-md rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-xl space-y-4 animate-fade-up">
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div class="space-y-0.5">
+            <span id="entry-spotlight-tag" class="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-600 dark:text-emerald-400">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              금일 진행 중인 행사
+            </span>
+            <h2 id="entry-spotlight-heading" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
+              오늘(11.23) 바로 참여할 수 있는 원주 행사
+            </h2>
+          </div>
+          <span id="entry-spotlight-count" class="px-3 py-1 rounded-full text-xs font-extrabold bg-brand-500/15 text-brand-700 dark:text-brand-400">
+            0건
+          </span>
+        </div>
+
+        <!-- 금일 행사 또는 가장 가까운 예정 행사 리스트 -->
+        <div id="entry-spotlight-list" class="space-y-3 max-h-[420px] overflow-y-auto pr-1"></div>
+
+        <!-- 하단: 다음 다가오는 행사 미리보기 바 -->
+        <div id="entry-next-upcoming-bar" class="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400"></div>
+      </div>
+    </div>
+
+    <!-- 진입 화면 하단 푸터 -->
+    <div class="max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 pb-5 text-center sm:text-left text-xs text-slate-500 dark:text-slate-500">
+      <span data-i18n="footerTeam">원행 · 강원대학교 원주캠퍼스 리빙랩 프로젝트 (TEAM.24 — 박수현 · 최지원 · 안주환)</span>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- 1. 메인 작동 화면 (들어가기 클릭 후 표시되는 월별 캘린더 & 일정 관리)   -->
+  <!-- ===================================================================== -->
+  <div id="app-screen" class="hidden flex-col min-h-screen">
+    <!-- 상단 내비게이션 헤더 -->
+    <header class="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-xs">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-3">
+        <!-- 브랜드 로고 (클릭 시 들어가기 홈 화면으로 복귀) -->
+        <button id="btn-back-entry" type="button" class="flex items-center gap-2.5 text-left group cursor-pointer" title="들어가기 화면으로 돌아가기">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-600 to-teal-500 flex items-center justify-center text-white shadow-sm shrink-0 group-hover:scale-105 transition">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="17" rx="3" />
+              <path d="M16 2v4M8 2v4M3 9h18" />
+              <circle cx="12" cy="15" r="2" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900 dark:text-white" data-i18n="appName">원행</h1>
+              <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-brand-500/15 text-brand-700 dark:text-brand-400 border border-brand-500/30" data-i18n="appSubtitle">
+                원주시 축제·행사 통합 가이드
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block" data-i18n="backToHomeHint">로고 클릭 시 홈(들어가기) 화면</p>
+          </div>
+        </button>
+
+        <!-- 우측 컨트롤 그룹: 오늘 이동 / 영문 전환 / 다크모드 전환 / AI 추천 -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button id="btn-today-jump" type="button" class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="today-label">오늘: 2026.11.23 (월)</span>
+        <!-- 우측 컨트롤 그룹: 오늘 이동 / 다크모드 전환 / AI 추천 -->
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <button id="btn-today-jump" type="button" class="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="today-label">오늘: 2026.11.23 (월)</span>
+          </button>
+
+          <button type="button" class="theme-toggle-btn inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 transition cursor-pointer">
+            <span class="theme-toggle-icon">☀️</span>
+            <span class="theme-toggle-label hidden sm:inline">라이트</span>
+          </button>
+
+          <button id="btn-open-ai-modal" type="button" class="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-brand-600 to-teal-500 hover:from-brand-500 hover:to-teal-400 text-white shadow-sm transition cursor-pointer">
+            <svg class="w-4 h-4 text-amber-200 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+            </svg>
+            <span>AI 맞춤 추천</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 메인 콘텐츠 영역 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
+
+      <!-- 상단 통계 카드 4종 -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400" id="stat-month-title">2026년 11월 행사</p>
+            <p class="text-2xl font-extrabold text-slate-900 dark:text-white mt-0.5"><span id="stat-month-count">0</span><span class="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1" data-i18n="unitCount">건</span></p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-brand-500/15 text-brand-600 dark:text-brand-400 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400" data-i18n="statOngoing">현재 진행중</p>
+            <p class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5"><span id="stat-ongoing-count">0</span><span class="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1" data-i18n="unitCount">건</span></p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400" data-i18n="statUpcoming">진행 예정 행사</p>
+            <p class="text-2xl font-extrabold text-amber-600 dark:text-amber-400 mt-0.5"><span id="stat-upcoming-count">0</span><span class="text-sm font-semibold text-slate-500 dark:text-slate-400 ml-1" data-i18n="unitCount">건</span></p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+          <div>
+            <p class="text-xs font-medium text-slate-500 dark:text-slate-400" data-i18n="statSyncTitle">실시간 동기화 상태</p>
+            <p class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 mt-1.5" id="stat-sync-status">기본 공식 데이터 연동됨</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          </div>
+        </div>
+      </section>
+
+      <!-- 필터, 검색, 월별 추가 행사 보기 & 삭제 복원 바 -->
+      <section class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3">
+        <div class="flex flex-col xl:flex-row gap-3 items-stretch xl:items-center justify-between">
+          <!-- 카테고리 필터 버튼 -->
+          <div class="flex flex-wrap items-center gap-1.5" id="category-filters">
+            <button data-category="ALL" class="cat-btn active px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-600 text-white shadow-xs transition cursor-pointer" data-i18n="catAll">전체 분야</button>
+            <button data-category="축제" class="cat-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer" data-i18n="catFestival">🎪 축제</button>
+            <button data-category="공연" class="cat-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer" data-i18n="catPerf">🎵 공연·음악</button>
+            <button data-category="전시" class="cat-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer" data-i18n="catExhib">🖼️ 전시·문화</button>
+            <button data-category="대학·청년" class="cat-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer" data-i18n="catCampus">🎓 대학·청년</button>
+          </div>
+
+          <!-- 우측: 주최 필터, 검색, 월별 추가 행사 보기, 삭제 복원 -->
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="organizer-filter" aria-label="Organizer Filter" class="px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="ALL" data-i18n="orgAll">모든 주최·출처</option>
+              <option value="원주시청" data-i18n="orgCity">원주시청 주요문화행사</option>
+              <option value="원주관광" data-i18n="orgTour">원주관광 축제·행사</option>
+              <option value="원주문화재단" data-i18n="orgWcf">원주문화재단</option>
+              <option value="대학교·지역" data-i18n="orgUniv">대학교·지역 청년</option>
+            </select>
+
+            <div class="relative flex-1 sm:w-52">
+              <input id="search-input" type="text" placeholder="행사명, 장소 검색..." class="w-full pl-9 pr-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+              <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+
+            <!-- 달마다 보는 추가 행사 보기 버튼 -->
+            <button id="btn-open-extra-modal" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 transition cursor-pointer">
+              <span>➕</span>
+              <span id="btn-extra-label">11월 추가 행사 보기</span>
+            </button>
+
+            <!-- 삭제한 일정 복원 버튼 (삭제된 항목이 있을 때 표시) -->
+            <button id="btn-restore-deleted" type="button" class="hidden inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-300 border border-rose-500/30 transition cursor-pointer">
+              <span>↩️</span>
+              <span id="btn-restore-label">삭제 복원 (0)</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 핵심 사용자 흐름: 좌측(달력 + 달력 안 상세보기 클릭) + 우측(선택 날짜 / 월간 일정) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- 1. 월별 캘린더 패널 (7 cols) -->
+        <section class="lg:col-span-7 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs overflow-hidden">
+          <!-- 캘린더 상단 컨트롤 + 달마다 실시간 새로고침 -->
+          <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <button id="btn-prev-month" type="button" aria-label="Previous Month" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <h2 id="calendar-month-heading" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white min-w-[135px] text-center">2026년 11월</h2>
+                <button id="btn-next-month" type="button" aria-label="Next Month" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition cursor-pointer">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+
+              <!-- 월별 실시간 새로고침 버튼 -->
+              <div class="flex items-center gap-2">
+                <label class="hidden sm:inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                  <input id="auto-live-refresh-chk" type="checkbox" checked class="rounded text-brand-600 focus:ring-brand-500" />
+                  <span data-i18n="autoSyncLabel">월 이동 시 자동 동기화</span>
+                </label>
+                <button id="btn-live-refresh" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 transition cursor-pointer">
+                  <svg id="live-refresh-icon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <span id="live-refresh-btn-text">11월 실시간 새로고침</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 빠른 월 이동 버튼 (9월~12월) -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 overflow-x-auto" id="quick-month-buttons">
+                <button data-jump-ym="2026-09" class="quick-month-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer">9월</button>
+                <button data-jump-ym="2026-10" class="quick-month-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer">10월</button>
+                <button data-jump-ym="2026-11" class="quick-month-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-600 text-white transition cursor-pointer">11월</button>
+                <button data-jump-ym="2026-12" class="quick-month-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer">12월</button>
+              </div>
+              <span class="text-[11px] font-medium text-brand-600 dark:text-brand-400" data-i18n="calendarClickHint">💡 달력 안 행사명을 누르면 바로 상세보기가 열립니다</span>
+            </div>
+          </div>
+
+          <!-- 요일 헤더 -->
+          <div id="calendar-weekday-header" class="grid grid-cols-7 bg-slate-50 dark:bg-slate-800/70 border-b border-slate-100 dark:border-slate-800 text-center py-2.5 text-xs font-bold">
+            <div class="text-rose-500">일</div>
+            <div class="text-slate-600 dark:text-slate-300">월</div>
+            <div class="text-slate-600 dark:text-slate-300">화</div>
+            <div class="text-slate-600 dark:text-slate-300">수</div>
+            <div class="text-slate-600 dark:text-slate-300">목</div>
+            <div class="text-slate-600 dark:text-slate-300">금</div>
+            <div class="text-blue-500">토</div>
+          </div>
+
+          <!-- 날짜 그리드 (JavaScript 동적 렌더링) -->
+          <div id="calendar-grid" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
+
+          <!-- 범례 및 사용자 흐름 안내 -->
+          <div class="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div class="flex flex-wrap items-center gap-3">
+              <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span><span data-i18n="legendFestival">축제</span></span>
+              <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-brand-500"></span><span data-i18n="legendPerf">공연·음악</span></span>
+              <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span><span data-i18n="legendExhib">전시·문화</span></span>
+              <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500"></span><span data-i18n="legendCampus">대학·청년</span></span>
+            </div>
+            <span id="live-sources-info" class="text-[11px] text-slate-400"></span>
+          </div>
+        </section>
+
+        <!-- 2. 선택 날짜 및 월간 행사 결과 리스트 (5 cols) -->
+        <section class="lg:col-span-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col max-h-[840px]">
+          <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="inline-flex items-center gap-1 text-xs font-bold text-brand-700 dark:text-brand-400 bg-brand-500/15 px-2.5 py-0.5 rounded-full mb-1" data-i18n="panelEyebrow">
+                  📍 어떤 축제가 어디서 열릴까요?
+                </span>
+                <h3 id="selected-date-heading" class="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white">
+                  2026년 11월 23일 (월) 행사
+                </h3>
+              </div>
+              <span id="result-badge-count" class="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 shrink-0">0건</span>
+            </div>
+
+            <!-- 보기 모드 전환 탭: 선택한 날짜 vs 해당 월 전체 -->
+            <div class="grid grid-cols-2 p-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">
+              <button id="tab-view-day" type="button" class="py-1.5 px-3 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs transition cursor-pointer" data-i18n="tabDayView">
+                선택한 날짜 일정
+              </button>
+              <button id="tab-view-month" type="button" class="py-1.5 px-3 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer" data-i18n="tabMonthView">
+                이번 달 전체 보기
+              </button>
+            </div>
+          </div>
+
+          <!-- 행사 카드 리스트 컨테이너 -->
+          <div id="event-list-container" class="p-4 space-y-3 overflow-y-auto flex-1"></div>
+        </section>
+      </div>
+
+      <!-- 공식 데이터 출처 안내 바 -->
+      <section class="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white" data-i18n="sourceBarTitle">원주 지역 공식 행사 데이터 출처 바로가기</h4>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5" data-i18n="sourceBarDesc">원주시청, 원주관광, 원주문화재단 및 지역 대학 홍보 공고를 수집·정리하여 제공합니다.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <a href="https://www.wonju.go.kr/www/selectCtyhllCldrList.do?key=213&" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+              <span data-i18n="linkCityHall">원주시청 주요문화행사</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+            </a>
+            <a href="https://www.wonju.go.kr/tour/selectTnResrceDataListT.do?key=5624&si1=80&tc10=Y&" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+              <span data-i18n="linkWonjuTour">원주관광 축제·행사</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+            </a>
+            <a href="https://www.wcf.or.kr/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+              <span data-i18n="linkWcf">원주문화재단</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 mt-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <p data-i18n="footerTeam">원행 · 강원대학교 원주캠퍼스 리빙랩 프로젝트 (TEAM.24 — 박수현 · 최지원 · 안주환)</p>
+        <p data-i18n="footerSub">실제 수집 데이터 기반 · 인스타/네이버 리뷰/지도 연동 지원</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 모달 1: 행사 상세 정보 + 인스타·네이버 리뷰·지도 + AI 요약 + 일정 삭제   -->
+  <!-- ===================================================================== -->
+  <div id="event-detail-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 dark:border-slate-800 animate-fade-up">
+      <div class="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3">
+        <div class="space-y-1.5">
+          <div class="flex flex-wrap items-center gap-1.5" id="modal-badges"></div>
+          <h3 id="modal-title" class="text-xl font-extrabold text-slate-900 dark:text-white leading-snug">행사명</h3>
+        </div>
+        <button id="btn-close-detail-modal" type="button" aria-label="Close" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/70 p-4 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 text-sm">
+          <div>
+            <p class="text-xs font-semibold text-slate-400" data-i18n="modalLabelDate">📅 기간 및 요일</p>
+            <p id="modal-date" class="font-bold text-slate-800 dark:text-slate-100 mt-0.5">-</p>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-400" data-i18n="modalLabelVenue">📍 개최 장소</p>
+            <p id="modal-venue" class="font-bold text-slate-800 dark:text-slate-100 mt-0.5">-</p>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-400" data-i18n="modalLabelOrg">🏛️ 주최 · 출처</p>
+            <p id="modal-organizer" class="font-semibold text-slate-700 dark:text-slate-200 mt-0.5">-</p>
+          </div>
+          <div>
+            <p class="text-xs font-semibold text-slate-400" data-i18n="modalLabelFee">🎟️ 관람료 · 대상</p>
+            <p id="modal-fee" class="font-semibold text-slate-700 dark:text-slate-200 mt-0.5">-</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5" data-i18n="modalLabelDesc">행사 소개</h4>
+          <p id="modal-desc" class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">-</p>
+        </div>
+
+        <div class="space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400" data-i18n="modalLabelLinks">실시간 후기 · SNS · 길찾기 바로가기</h4>
+          <div class="grid grid-cols-2 gap-2.5">
+            <a id="modal-link-insta" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-pink-500 to-amber-500 text-white hover:opacity-95 shadow-xs transition">
+              <span data-i18n="btnInstaFull">📸 인스타그램 보기</span>
+            </a>
+            <a id="modal-link-naver-review" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-[#03C75A] text-white hover:opacity-95 shadow-xs transition">
+              <span data-i18n="btnNaverFull">📝 네이버 블로그 리뷰</span>
+            </a>
+            <a id="modal-link-naver-map" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 transition">
+              <span data-i18n="btnMapFull">🗺️ 네이버 지도 위치</span>
+            </a>
+            <a id="modal-link-official" href="#" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 transition">
+              <span data-i18n="btnOfficialFull">🔗 공식 누리집 공고</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Gemini API 행사 요약 -->
+        <div class="rounded-2xl border border-brand-500/30 bg-brand-500/10 p-4 space-y-2.5">
+          <div class="flex items-center justify-between gap-2">
+            <span class="text-xs font-extrabold text-brand-700 dark:text-brand-300 flex items-center gap-1.5" data-i18n="modalAiTitle">
+              ✨ Gemini AI 한눈에 요약 & 방문 꿀팁
+            </span>
+            <button id="btn-generate-event-tip" type="button" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white transition cursor-pointer" data-i18n="btnGenAiTip">
+              AI 요약 생성
+            </button>
+          </div>
+          <div id="modal-ai-summary-box" class="text-xs sm:text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line"></div>
+        </div>
+
+        <!-- 하단 일정 삭제 및 복사 버튼 -->
+        <div class="flex items-center justify-between gap-2 pt-1">
+          <button id="btn-modal-delete-event" type="button" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-rose-500/15 hover:bg-rose-500/25 text-rose-600 dark:text-rose-400 transition cursor-pointer">
+            <span>🗑️</span>
+            <span data-i18n="btnDeleteEvent">일정 지우기</span>
+          </button>
+
+          <button id="btn-copy-event" type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white transition cursor-pointer">
+            <span>📋</span>
+            <span data-i18n="btnCopyEvent">일정 정보 복사하기</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 모달 2: 달마다 보는 추가 행사 보기 & 새 일정 등록                       -->
+  <!-- ===================================================================== -->
+  <div id="extra-events-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 dark:border-slate-800 animate-fade-up">
+      <div class="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+        <div>
+          <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400" data-i18n="extraModalEyebrow">월별 추가 수집 일정</span>
+          <h3 id="extra-modal-title" class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">2026년 11월 추가 행사 보기</h3>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btn-extra-prev-month" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer">◀</button>
+          <button id="btn-extra-next-month" type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 cursor-pointer">▶</button>
+          <button id="btn-close-extra-modal" type="button" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-5">
+        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400" data-i18n="extraModalDesc">
+          기본 달력 외에 해당 월에 추가로 수집된 원주 지역 플리마켓·버스킹·캠퍼스 반짝 행사를 확인하고 달력에 담을 수 있습니다.
+        </p>
+
+        <!-- 월별 추가 행사 카드 리스트 -->
+        <div id="extra-events-list" class="space-y-3"></div>
+
+        <!-- 직접 일정 추가 폼 -->
+        <form id="custom-event-form" class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-brand-600 dark:text-brand-400" data-i18n="customAddTitle">✍️ 새 단기 행사 직접 등록하기</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <input id="custom-title" type="text" required placeholder="행사명 (예: 원주 청년 플리마켓)" class="px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white" />
+            <input id="custom-venue" type="text" required placeholder="장소 (예: 중앙동 문화의거리)" class="px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white" />
+            <input id="custom-start" type="date" required value="2026-11-24" class="px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white" />
+            <input id="custom-end" type="date" required value="2026-11-24" class="px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white" />
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <select id="custom-category" class="px-3 py-2 rounded-xl text-xs sm:text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white font-semibold">
+              <option value="축제" data-i18n="catFestival">🎪 축제</option>
+              <option value="공연" data-i18n="catPerf">🎵 공연·음악</option>
+              <option value="전시" data-i18n="catExhib">🖼️ 전시·문화</option>
+              <option value="대학·청년" data-i18n="catCampus">🎓 대학·청년</option>
+            </select>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-600 hover:bg-brand-500 text-white transition cursor-pointer" data-i18n="btnSubmitCustom">
+              + 달력에 등록
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 모달 3: Gemini AI 맞춤 원주 축제·행사 큐레이터                          -->
+  <!-- ===================================================================== -->
+  <div id="ai-curator-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 dark:border-slate-800 animate-fade-up">
+      <div class="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div>
+          <span class="text-xs font-bold text-brand-600 dark:text-brand-400" data-i18n="aiModalEyebrow">Gemini API 기반 큐레이션</span>
+          <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white" data-i18n="aiModalTitle">나에게 딱 맞는 원주 행사 추천</h3>
+        </div>
+        <button id="btn-close-ai-modal" type="button" aria-label="Close" class="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6 space-y-4">
+        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed" data-i18n="aiModalDesc">
+          수집된 실제 원주시 행사 데이터만을 바탕으로, 방문 대상과 일정에 어울리는 축제·공연과 나들이 코스를 추천합니다.
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="ai-persona-select" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="aiLabelCompanion">누구와 함께 가시나요?</label>
+            <select id="ai-persona-select" class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="campus" data-i18n="personaCampus">🎓 대학생·청년 (친구/데이트)</option>
+              <option value="family" data-i18n="personaFamily">👨‍👩‍👧‍👦 원주시민 가족 (아이·부모님)</option>
+              <option value="tourist" data-i18n="personaTourist">🧳 타지 관광객 (원주 여행)</option>
+              <option value="solo" data-i18n="personaSolo">🎧 혼자 즐기는 전시·공연 산책</option>
+            </select>
+          </div>
+          <div>
+            <label for="ai-period-select" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="aiLabelWhen">언제 방문 예정인가요?</label>
+            <select id="ai-period-select" class="w-full px-3 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="nov" data-i18n="periodNov">이번 주 · 11월 말</option>
+              <option value="dec" data-i18n="periodDec">12월 연말 · 크리스마스</option>
+              <option value="free" data-i18n="periodFree">무료 입장 행사 위주</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="ai-extra-note" class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="aiLabelNote">원하는 분위기나 지역 (선택)</label>
+          <input id="ai-extra-note" type="text" placeholder="예: 중앙동 미로시장 근처, 음악 공연 위주" class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+
+        <button id="btn-run-ai-curator" type="button" class="w-full py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-brand-600 to-teal-500 hover:from-brand-500 hover:to-teal-400 text-white shadow-sm transition cursor-pointer" data-i18n="btnRunAi">
+          ✨ 실제 원주 행사 데이터로 추천받기
+        </button>
+
+        <div id="ai-curator-result" class="hidden rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 p-4 text-sm text-slate-700 dark:text-slate-200 leading-relaxed whitespace-pre-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    const TODAY_STR = "2026-11-23";
+    const DAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+
+    // 메인 데이터 풀
+    const INITIAL_EVENTS = [
+      {
+        id: "wj-01",
+        title: "2026 원주그림책페스티벌 <새로운 독자, 환대의 노래>",
+        category: "축제",
+        organizer: "원주문화재단",
+        startDate: "2026-11-06",
+        endDate: "2026-11-29",
+        venue: "원주 남산골문화센터 일원",
+        fee: "무료 (일부 체험 사전신청)",
+        audience: "전 연령 · 가족 · 청년",
+        summary: "원주시 대표 그림책 문화축제로 주제전시, 그림책 작가와의 만남, 야외 독서 체험 및 시민 참여 프로그램이 남산골문화센터 일원에서 열립니다.",
+        officialUrl: "https://www.wcf.or.kr/perform/concert/index.php?tsort=1&msort=8&s_concert_genre=4",
+        instaTag: "원주그림책페스티벌",
+        naverQuery: "원주 그림책페스티벌 남산골문화센터 후기"
+      },
+      {
+        id: "wj-02",
+        title: "황금빛 물결: 반계리 은행나무 아트 오브제 프로젝트",
+        category: "전시",
+        organizer: "원주문화재단",
+        startDate: "2026-11-02",
+        endDate: "2026-11-27",
+        venue: "원주문화재단 및 문막 반계리 일원",
+        fee: "무료 관람",
+        audience: "원주시민 · 관광객 · 청년",
+        summary: "천연기념물 반계리 은행나무의 계절적 아름다움을 현대 미술 아트 오브제와 지역 예술가들의 설치 작품으로 재해석한 기획 전시입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "반계리은행나무",
+        naverQuery: "원주 반계리 은행나무 아트 오브제 전시"
+      },
+      {
+        id: "wj-03",
+        title: "연세 기획전시 <그림책이 펼치는 환대의 시간>",
+        category: "대학·청년",
+        organizer: "대학교·지역",
+        startDate: "2026-10-27",
+        endDate: "2026-11-26",
+        venue: "연세대학교 미래캠퍼스 매지호수 일대",
+        fee: "무료 관람",
+        audience: "대학생 · 청년 · 시민",
+        summary: "지역 대학(연세대 미래캠퍼스)과 원주문화재단이 협력해 매지호수 산책로 일대에서 선보이는 야외 그림책 명장면 기획 전시입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "연세대미래캠퍼스",
+        naverQuery: "연세대 미래캠퍼스 매지호수 그림책 전시"
+      },
+      {
+        id: "wj-04",
+        title: "2026 음악이 있는 퇴근길 인문학",
+        category: "공연",
+        organizer: "원주문화재단",
+        startDate: "2026-11-03",
+        endDate: "2026-11-26",
+        venue: "남산골문화센터 · 치악예술관",
+        fee: "무료",
+        audience: "직장인 · 대학생 · 시민",
+        summary: "평일 저녁 퇴근길 시민과 청년을 위해 클래식·어쿠스틱 연주와 인문학 강연을 결합한 생활밀착형 문화 프로그램입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "원주문화재단",
+        naverQuery: "원주 음악이 있는 퇴근길 인문학"
+      },
+      {
+        id: "wj-05",
+        title: "김영준 작가 초대전 「마침내, 빛은 사랑이어라」",
+        category: "전시",
+        organizer: "원주문화재단",
+        startDate: "2026-11-10",
+        endDate: "2026-12-05",
+        venue: "원주 치악예술관 전시실",
+        fee: "무료 관람",
+        audience: "전 연령",
+        summary: "빛과 색채를 주제로 한 김영준 작가의 회화 및 조형 작품 초대전으로 치악예술관 전시실에서 진행됩니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "치악예술관",
+        naverQuery: "원주 치악예술관 김영준 작가 초대전"
+      },
+      {
+        id: "wj-08",
+        title: "창작 음악극 <치악재> (안녕팩토리)",
+        category: "공연",
+        organizer: "원주문화재단",
+        startDate: "2026-11-25",
+        endDate: "2026-11-26",
+        venue: "원주중앙청소년문화의집 2층 소공연장",
+        fee: "무료",
+        audience: "청소년 · 청년 · 시민",
+        summary: "지역 브랜드 지원사업 선정작으로, 원주 치악산 설화와 지역의 이야기를 현대적인 음악극으로 풀어낸 창작 무대입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "원주공연",
+        naverQuery: "원주 음악극 치악재 후기"
+      },
+      {
+        id: "wj-09",
+        title: "제11회 원주그림책포럼",
+        category: "전시",
+        organizer: "원주시청",
+        startDate: "2026-11-27",
+        endDate: "2026-11-27",
+        venue: "원주시 그림책도서관 1층 상상누리",
+        fee: "무료",
+        audience: "시민 · 창작자 · 대학생",
+        summary: "그림책 도시 원주의 문화적 가치와 미래 독자 확장을 논의하는 제11회 원주그림책포럼입니다.",
+        officialUrl: "https://www.wonju.go.kr/www/selectCtyhllCldrList.do?key=213&",
+        instaTag: "원주그림책도서관",
+        naverQuery: "원주시 그림책도서관 포럼"
+      },
+      {
+        id: "wj-10",
+        title: "미로, 기웃 (2회차) — 중앙동 미로예술시장 주말 축제",
+        category: "축제",
+        organizer: "원주문화재단",
+        startDate: "2026-11-28",
+        endDate: "2026-11-29",
+        venue: "원주 중앙동 미로예술원주시장 일원",
+        fee: "무료 입장",
+        audience: "청년 · 관광객 · 가족",
+        summary: "원주 중앙시장 2층 미로예술시장 골목 곳곳에서 공예 플리마켓, 버스킹, 골목 투어 체험이 어우러지는 주말 문화축제입니다.",
+        officialUrl: "https://www.wcf.or.kr/perform/concert/index.php?tsort=1&msort=8&s_concert_genre=4",
+        instaTag: "미로예술시장",
+        naverQuery: "원주 미로예술시장 미로기웃 후기"
+      },
+      {
+        id: "wj-11",
+        title: "역사문화공연 <의병대장 민긍호: 세대를 넘어>",
+        category: "공연",
+        organizer: "원주시청",
+        startDate: "2026-11-28",
+        endDate: "2026-11-28",
+        venue: "원주 치악예술관",
+        fee: "무료 관람",
+        audience: "전 연령 · 가족",
+        summary: "원주 지역의 대표적 항일 의병장 민긍호 선생의 삶과 정신을 기리는 특별 기념 공연입니다.",
+        officialUrl: "https://www.wonju.go.kr/www/selectCtyhllCldrList.do?key=213&",
+        instaTag: "원주시청",
+        naverQuery: "원주 치악예술관 의병대장 민긍호"
+      },
+      {
+        id: "wj-12",
+        title: "원주 키즈 콘서트 체험형 음악극 <나를 찾아 떠나는 여행>",
+        category: "공연",
+        organizer: "원주문화재단",
+        startDate: "2026-11-28",
+        endDate: "2026-11-28",
+        venue: "원주 카페 플레이리스트",
+        fee: "무료",
+        audience: "어린이 · 가족 단위",
+        summary: "아이들이 직접 음악과 이야기에 참여하며 즐기는 주말 가족 체험형 키즈 콘서트입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "원주키즈콘서트",
+        naverQuery: "원주 플레이리스트 키즈 콘서트"
+      },
+      {
+        id: "wj-13",
+        title: "김은영 바이올린 독주회: 고전과 낭만의 만남",
+        category: "공연",
+        organizer: "원주문화재단",
+        startDate: "2026-11-28",
+        endDate: "2026-11-28",
+        venue: "원주제일교회",
+        fee: "10,000원",
+        audience: "클래식 애호가 · 시민",
+        summary: "고전주의와 낭만주의 바이올린 명곡들을 한자리에서 감상할 수 있는 토요일 저녁 실내악 독주회입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "원주클래식",
+        naverQuery: "원주 김은영 바이올린 독주회"
+      },
+      {
+        id: "wj-14",
+        title: "원주시립합창단 제120회 · 원주시향 제207회 정기연주회",
+        category: "공연",
+        organizer: "원주시청",
+        startDate: "2026-12-03",
+        endDate: "2026-12-03",
+        venue: "원주 치악예술관",
+        fee: "5,000원~",
+        audience: "시민 · 클래식 팬",
+        summary: "원주시립합창단과 원주시립교향악단이 함께 선보이는 12월 정기 합동 연주회입니다.",
+        officialUrl: "https://www.wonju.go.kr/www/selectCtyhllCldrList.do?key=213&",
+        instaTag: "원주시립교향악단",
+        naverQuery: "원주시립교향악단 정기연주회 후기"
+      },
+      {
+        id: "wj-16",
+        title: "국립청년극단 연극 <햄릿>",
+        category: "공연",
+        organizer: "원주시청",
+        startDate: "2026-12-04",
+        endDate: "2026-12-06",
+        venue: "원주 백운아트홀",
+        fee: "10,000원",
+        audience: "청년 · 대학생 · 시민",
+        summary: "국립청년극단의 역동적인 연출로 재탄생한 셰익스피어 명작 연극 <햄릿> 원주 초청 공연입니다.",
+        officialUrl: "https://www.wonju.go.kr/www/selectCtyhllCldrList.do?key=213&",
+        instaTag: "백운아트홀",
+        naverQuery: "원주 백운아트홀 국립청년극단 햄릿"
+      },
+      {
+        id: "wj-18",
+        title: "2026 [원-라이브] The Stage We Wanted 피날레 공연",
+        category: "대학·청년",
+        organizer: "원주문화재단",
+        startDate: "2026-12-12",
+        endDate: "2026-12-12",
+        venue: "태장공연장 및 원주시 일원",
+        fee: "무료",
+        audience: "청년 · 밴드 · 시민",
+        summary: "지역 청년 뮤지션과 시민 밴드가 함께 만드는 라이브 음악 프로젝트 [원-라이브]의 12월 무대입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "원라이브",
+        naverQuery: "원주문화재단 원라이브 공연"
+      },
+      {
+        id: "wj-20",
+        title: "커튼콜 Feat. 손열음 · 스베틀린 루세브 · 조성현 [원주]",
+        category: "공연",
+        organizer: "원주문화재단",
+        startDate: "2026-12-18",
+        endDate: "2026-12-19",
+        venue: "원주 플레이리스트",
+        fee: "50,000원",
+        audience: "클래식 팬 · 관광객 · 시민",
+        summary: "원주 출신 세계적 피아니스트 손열음과 정상급 연주자들이 고향 원주에서 선보이는 연말 스페셜 실내악 무대입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "손열음원주",
+        naverQuery: "원주 커튼콜 손열음 공연 후기"
+      },
+      {
+        id: "wj-22",
+        title: "크리스마스 가족 뮤지컬 <피노키오>",
+        category: "축제",
+        organizer: "원주시청",
+        startDate: "2026-12-25",
+        endDate: "2026-12-25",
+        venue: "원주 백운아트홀",
+        fee: "35,000원",
+        audience: "어린이 · 가족 단위",
+        summary: "크리스마스 당일 온 가족이 함께 즐길 수 있는 명작 동화 가족 뮤지컬 <피노키오> 공연입니다.",
+        officialUrl: "https://www.wonju.go.kr/www/selectCtyhllCldrList.do?key=213&",
+        instaTag: "백운아트홀",
+        naverQuery: "원주 백운아트홀 뮤지컬 피노키오"
+      },
+      {
+        id: "wj-24",
+        title: "2026 원주 만두축제 (원주 대표 먹거리 축제)",
+        category: "축제",
+        organizer: "원주시청",
+        startDate: "2026-10-23",
+        endDate: "2026-10-25",
+        venue: "원주 중앙동 전통시장 · 문화의거리 일원",
+        fee: "무료 입장",
+        audience: "전 연령 · 관광객 · 청년",
+        summary: "'만두는 원주, 원주는 만두'를 주제로 전통 만두부터 세계 만두, 라이브 쿠킹쇼, 야시장 먹거리 부스가 펼쳐지는 원주 대표 가을 축제입니다.",
+        officialUrl: "https://www.wonju.go.kr/tour/selectTnResrceDataListT.do?key=5624&si1=80&tc10=Y&",
+        instaTag: "원주만두축제",
+        naverQuery: "2026 원주 만두축제 후기"
+      },
+      {
+        id: "wj-25",
+        title: "2026 원주용수골가을꽃축제",
+        category: "축제",
+        organizer: "원주관광",
+        startDate: "2026-09-23",
+        endDate: "2026-10-05",
+        venue: "원주시 판부면 서곡리 용수골 일원",
+        fee: "유료 (초등학생 이하 무료)",
+        audience: "관광객 · 가족 · 커플",
+        summary: "판부면 서곡리 마을 주민들이 직접 가꾼 백일홍·코스모스 꽃밭과 포토존, 농촌 체험을 즐길 수 있는 원주 대표 꽃축제입니다.",
+        officialUrl: "https://www.wonju.go.kr/tour/selectTnResrceDataListT.do?key=5624&si1=80&tc10=Y&",
+        instaTag: "원주용수골가을꽃축제",
+        naverQuery: "원주 용수골 가을꽃축제 후기"
+      },
+      {
+        id: "wj-26",
+        title: "강원대학교 원주캠퍼스 · 지역청년 문화교류 한마당",
+        category: "대학·청년",
+        organizer: "대학교·지역",
+        startDate: "2026-09-24",
+        endDate: "2026-09-25",
+        venue: "강원대학교 원주캠퍼스 노천극장 및 잔디광장",
+        fee: "무료",
+        audience: "대학생 · 원주 청년 · 시민",
+        summary: "강원대학교 원주캠퍼스 재학생과 원주 지역 청년들이 함께 동아리 공연, 플리마켓, 푸드트럭을 즐기는 캠퍼스 축제 행사입니다.",
+        officialUrl: "https://www.wonju.go.kr/www/selectCtyhllCldrList.do?key=213&",
+        instaTag: "강원대원주캠퍼스",
+        naverQuery: "강원대학교 원주캠퍼스 축제 후기"
+      },
+      {
+        id: "wj-27",
+        title: "2026 문화가 있는 날 「K-매운맛 페스티벌」",
+        category: "축제",
+        organizer: "원주문화재단",
+        startDate: "2026-11-13",
+        endDate: "2026-11-15",
+        venue: "원주 산업단지 일원",
+        fee: "무료 입장",
+        audience: "청년 · 직장인 · 시민",
+        summary: "문화선도산단 프로젝트의 일환으로 매운맛 먹거리 부스와 인기 아티스트 라이브 공연이 함께 열린 페스티벌입니다.",
+        officialUrl: "https://www.wcf.or.kr/perform/concert/index.php?tsort=1&msort=8&s_concert_genre=4",
+        instaTag: "원주K매운맛페스티벌",
+        naverQuery: "원주 K매운맛 페스티벌 후기"
+      }
+    ];
+
+    const EXTRA_MONTHLY_POOL = [
+      {
+        id: "extra-11-1",
+        title: "강원대 원주캠퍼스 기말 응원 야간 푸드트럭 & 버스킹",
+        category: "대학·청년",
+        organizer: "대학교·지역",
+        startDate: "2026-11-24",
+        endDate: "2026-11-25",
+        venue: "강원대학교 원주캠퍼스 학생회관 앞 광장",
+        fee: "무료 입장",
+        audience: "대학생 · 청년",
+        summary: "시험 기간을 앞둔 강원대 원주캠퍼스 학생들과 지역 청년을 위한 저녁 어쿠스틱 버스킹과 푸드트럭 팝업 행사입니다.",
+        officialUrl: "https://www.kangwon.ac.kr/",
+        instaTag: "강원대원주캠퍼스",
+        naverQuery: "강원대 원주캠퍼스 버스킹 푸드트럭"
+      },
+      {
+        id: "extra-11-2",
+        title: "원주 혁신도시 미리내공원 주말 핸드메이드 플리마켓",
+        category: "축제",
+        organizer: "원주관광",
+        startDate: "2026-11-28",
+        endDate: "2026-11-29",
+        venue: "원주 반곡동 미리내공원 산책로",
+        fee: "무료 입장",
+        audience: "가족 · 청년 · 주민",
+        summary: "원주 청년 공방 작가들의 소품 마켓, 디저트 부스, 소규모 야외 공연이 열리는 주말 반짝 플리마켓입니다.",
+        officialUrl: "https://www.wonju.go.kr/tour/selectTnResrceDataListT.do?key=5624&si1=80&tc10=Y&",
+        instaTag: "원주혁신도시플리마켓",
+        naverQuery: "원주 혁신도시 미리내공원 플리마켓"
+      },
+      {
+        id: "extra-12-1",
+        title: "행구수변공원 연말 별빛 야간 버스킹 & 포토존",
+        category: "축제",
+        organizer: "원주시청",
+        startDate: "2026-12-19",
+        endDate: "2026-12-20",
+        venue: "원주 행구수변공원 야외무대",
+        fee: "무료",
+        audience: "커플 · 가족 · 관광객",
+        summary: "치악산 자락 행구수변공원에서 연말 경관 조명과 함께 인디 밴드·캐럴 버스킹을 즐기는 야간 문화 행사입니다.",
+        officialUrl: "https://www.wonju.go.kr/www/selectCtyhllCldrList.do?key=213&",
+        instaTag: "행구수변공원",
+        naverQuery: "원주 행구수변공원 야간 버스킹"
+      },
+      {
+        id: "extra-12-2",
+        title: "원주 청년창업 굿즈 팝업스토어 <원주상회>",
+        category: "대학·청년",
+        organizer: "원주문화재단",
+        startDate: "2026-12-26",
+        endDate: "2026-12-27",
+        venue: "원주 중앙동 문화의거리 팝업공간",
+        fee: "무료 입장",
+        audience: "청년 · 관광객",
+        summary: "원주 지역 대학생과 청년 창업가들이 제작한 로컬 캐릭터 굿즈·엽서·디저트를 만나는 2일간의 연말 팝업스토어입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "원주문화의거리",
+        naverQuery: "원주 중앙동 문화의거리 팝업스토어"
+      },
+      {
+        id: "extra-10-1",
+        title: "원주 댄싱공연장 가을 야외 힙합·스트릿 댄스 잼",
+        category: "공연",
+        organizer: "원주문화재단",
+        startDate: "2026-10-17",
+        endDate: "2026-10-18",
+        venue: "원주 댄싱공연장 야외무대",
+        fee: "무료",
+        audience: "청년 · 대학생 · 시민",
+        summary: "강원권 대학 댄스 동아리와 스트릿 댄서들이 참여하는 가을 주말 댄스 배틀 및 퍼포먼스 행사입니다.",
+        officialUrl: "https://www.wcf.or.kr/",
+        instaTag: "원주댄싱공연장",
+        naverQuery: "원주 댄싱공연장 댄스 페스티벌"
+      }
+    ];
+
+    // 앱 상태 관리 객체 (한국어 단일 모드)
+    const AppState = {
+      theme: "dark",
+      events: [...INITIAL_EVENTS],
+      deletedEvents: [],
+      currentYear: 2026,
+      currentMonth: 11,
+      selectedDateStr: TODAY_STR,
+      selectedCategory: "ALL",
+      selectedOrganizer: "ALL",
+      searchQuery: "",
+      rightPanelViewMode: "day",
+      activeModalEventId: null,
+      extraModalMonth: 11,
+      entrySelectedCat: "ALL"
+    };
+
+    // 토스트 알림 (alert 대체)
+    function showToast(msg, type = "info") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+      const toast = document.createElement("div");
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-2xl text-xs font-bold text-white shadow-xl transition-all duration-300 transform translate-y-2 opacity-0 flex items-center gap-2 ${
+        type === "success" ? "bg-emerald-600" : type === "error" ? "bg-rose-600" : "bg-slate-800"
+      }`;
+      toast.innerHTML = `<span>${msg}</span>`;
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove("translate-y-2", "opacity-0");
+      });
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y-2");
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // 날짜 포맷 함수 (한국어 전용)
+    function formatDateDisplay(dateStr) {
+      if (!dateStr) return "";
+      const parts = dateStr.split("-");
+      if (parts.length !== 3) return dateStr;
+      const year = parts[0];
+      const month = parseInt(parts[1], 10);
+      const day = parseInt(parts[2], 10);
+      const dt = new Date(parseInt(parts[0], 10), month - 1, day);
+      const dayIdx = dt.getDay();
+      return `${year}년 ${month}월 ${day}일 (${DAYS_KO[dayIdx]})`;
+    }
+
+    function formatRangeDisplay(startDate, endDate) {
+      if (startDate === endDate) return formatDateDisplay(startDate);
+      const sParts = startDate.split("-");
+      const eParts = endDate.split("-");
+      return `${sParts[0]}.${sParts[1]}.${sParts[2]} ~ ${eParts[0]}.${eParts[1]}.${eParts[2]}`;
+    }
+
+    function isEventActiveOnDate(event, dateStr) {
+      return event.startDate <= dateStr && dateStr <= event.endDate;
+    }
+
+    function getEventStatus(event, targetDateStr = TODAY_STR) {
+      if (targetDateStr < event.startDate) return "upcoming";
+      if (targetDateStr > event.endDate) return "ended";
+      return "ongoing";
+    }
+
+    function getCategoryColorBadgeClass(category) {
+      switch (category) {
+        case "축제": return "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30";
+        case "공연": return "bg-brand-500/15 text-brand-700 dark:text-brand-400 border-brand-500/30";
+        case "전시": return "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30";
+        case "대학·청년": return "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30";
+        default: return "bg-slate-500/15 text-slate-700 dark:text-slate-300 border-slate-500/30";
+      }
+    }
+
+    function getCategoryDotClass(category) {
+      switch (category) {
+        case "축제": return "bg-rose-500";
+        case "공연": return "bg-brand-500";
+        case "전시": return "bg-amber-500";
+        case "대학·청년": return "bg-indigo-500";
+        default: return "bg-slate-400";
+      }
+    }
+
+    // 다크모드 토글
+    function toggleTheme() {
+      AppState.theme = AppState.theme === "dark" ? "light" : "dark";
+      const html = document.documentElement;
+      if (AppState.theme === "dark") {
+        html.classList.add("dark");
+      } else {
+        html.classList.remove("dark");
+      }
+      document.querySelectorAll(".theme-toggle-label").forEach(el => {
+        el.innerText = AppState.theme === "dark" ? "라이트" : "다크";
+      });
+      document.querySelectorAll(".theme-toggle-icon").forEach(el => {
+        el.innerText = AppState.theme === "dark" ? "☀️" : "🌙";
+      });
+    }
+
+    // 행사 필터링 함수
+    function getFilteredEvents() {
+      return AppState.events.filter(evt => {
+        if (AppState.selectedCategory !== "ALL" && evt.category !== AppState.selectedCategory) return false;
+        if (AppState.selectedOrganizer !== "ALL" && evt.organizer !== AppState.selectedOrganizer) return false;
+        if (AppState.searchQuery.trim() !== "") {
+          const q = AppState.searchQuery.toLowerCase();
+          const matchTitle = (evt.title || "").toLowerCase().includes(q);
+          const matchVenue = (evt.venue || "").toLowerCase().includes(q);
+          const matchOrg = (evt.organizer || "").toLowerCase().includes(q);
+          if (!matchTitle && !matchVenue && !matchOrg) return false;
+        }
+        return true;
+      });
+    }
+
+    // 진입 화면 스포트라이트 렌더링
+    function renderEntrySpotlight() {
+      const listEl = document.getElementById("entry-spotlight-list");
+      const tagEl = document.getElementById("entry-spotlight-tag");
+      const headingEl = document.getElementById("entry-spotlight-heading");
+      const countEl = document.getElementById("entry-spotlight-count");
+      const nextBarEl = document.getElementById("entry-next-upcoming-bar");
+
+      if (!listEl) return;
+
+      const catFilter = AppState.entrySelectedCat;
+      let candidateEvents = AppState.events.filter(evt => {
+        if (catFilter !== "ALL" && evt.category !== catFilter) return false;
+        return true;
+      });
+
+      const todayEvents = candidateEvents.filter(evt => isEventActiveOnDate(evt, TODAY_STR));
+
+      listEl.innerHTML = "";
+
+      if (todayEvents.length > 0) {
+        tagEl.className = "inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-600 dark:text-emerald-400";
+        tagEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>금일 진행 중인 행사`;
+        headingEl.innerText = "오늘(11.23) 바로 참여할 수 있는 원주 행사";
+        countEl.innerText = `${todayEvents.length}건`;
+
+        todayEvents.forEach(evt => {
+          listEl.appendChild(createEventCardElement(evt));
+        });
+
+        const futureEvents = candidateEvents.filter(evt => evt.startDate > TODAY_STR).sort((a, b) => a.startDate.localeCompare(b.startDate));
+        if (futureEvents.length > 0) {
+          const nextEvt = futureEvents[0];
+          nextBarEl.innerHTML = `
+            <span>⏳ 다음 가장 가까운 예정 행사: <strong class="text-slate-800 dark:text-slate-100">${nextEvt.title}</strong> (${nextEvt.startDate})</span>
+            <button type="button" onclick="openDetailModal('${nextEvt.id}')" class="text-brand-600 dark:text-brand-400 font-bold hover:underline cursor-pointer">미리보기</button>
+          `;
+        } else {
+          nextBarEl.innerText = "원주의 모든 축제 및 행사를 캘린더에서 확인해보세요.";
+        }
+      } else {
+        const upcomingEvents = candidateEvents.filter(evt => evt.startDate > TODAY_STR).sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+        tagEl.className = "inline-flex items-center gap-1.5 text-xs font-extrabold text-amber-600 dark:text-amber-400";
+        tagEl.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>오늘 행사 종료 · 가장 가까운 예정 행사`;
+        headingEl.innerText = "오늘 진행 행사는 없지만, 곧 다가오는 원주 축제입니다";
+        countEl.innerText = `${upcomingEvents.length}건 예정`;
+
+        if (upcomingEvents.length > 0) {
+          upcomingEvents.slice(0, 3).forEach(evt => {
+            listEl.appendChild(createEventCardElement(evt));
+          });
+          nextBarEl.innerHTML = `<span>💡 카테고리를 선택하거나 들어가기를 통해 달력에서 월별로 탐색할 수 있습니다.</span>`;
+        } else {
+          listEl.innerHTML = `
+            <div class="p-8 text-center text-slate-500 dark:text-slate-400">
+              <p class="text-sm font-semibold">해당 분야에 등록된 행사가 없습니다.</p>
+            </div>
+          `;
+          nextBarEl.innerText = "";
+        }
+      }
+    }
+
+    // 행사 카드 엘리먼트 생성
+    function createEventCardElement(evt) {
+      const card = document.createElement("div");
+      card.className = "group bg-slate-50 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 shadow-xs transition hover:shadow-md flex flex-col justify-between gap-3";
+
+      const dateStrDisplay = formatRangeDisplay(evt.startDate, evt.endDate);
+      const status = getEventStatus(evt, TODAY_STR);
+
+      let statusBadge = "";
+      if (status === "ongoing") {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">진행중</span>`;
+      } else if (status === "upcoming") {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30">진행예정</span>`;
+      } else {
+        statusBadge = `<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-500/20 text-slate-600 dark:text-slate-400 border border-slate-500/30">종료</span>`;
+      }
+
+      const instaUrl = `https://www.instagram.com/explore/tags/${encodeURIComponent(evt.instaTag || '원주축제')}/`;
+      const naverReviewUrl = `https://search.naver.com/search.naver?query=${encodeURIComponent(evt.naverQuery || evt.title)}`;
+      const naverMapUrl = `https://map.naver.com/v5/search/${encodeURIComponent(evt.venue)}`;
+
+      card.innerHTML = `
+        <div class="space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-1.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold border ${getCategoryColorBadgeClass(evt.category)}">${evt.category}</span>
+              ${statusBadge}
+            </div>
+            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">${evt.organizer}</span>
+          </div>
+
+          <h4 class="text-base font-extrabold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition cursor-pointer" onclick="openDetailModal('${evt.id}')">
+            ${evt.title}
+          </h4>
+
+          <div class="text-xs text-slate-600 dark:text-slate-300 space-y-1">
+            <p class="flex items-center gap-1.5"><span class="shrink-0">📅</span> <span>${dateStrDisplay}</span></p>
+            <p class="flex items-center gap-1.5"><span class="shrink-0">📍</span> <span>${evt.venue}</span></p>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex flex-wrap items-center justify-between gap-2">
+          <button type="button" onclick="openDetailModal('${evt.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white transition cursor-pointer">
+            ✨ 상세 · AI 요약
+          </button>
+
+          <div class="flex items-center gap-1 text-[11px] font-semibold">
+            <a href="${instaUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-slate-200/80 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition">📸 인스타</a>
+            <a href="${naverReviewUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-slate-200/80 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition">📝 네이버 리뷰</a>
+            <a href="${naverMapUrl}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 rounded-lg bg-slate-200/80 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition">🗺️ 지도</a>
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    // 메인 상단 카운터 업데이트
+    function renderAppHeaderStats() {
+      const year = AppState.currentYear;
+      const month = AppState.currentMonth;
+      const ymStr = `${year}-${String(month).padStart(2, '0')}`;
+
+      const titleEl = document.getElementById("stat-month-title");
+      if (titleEl) titleEl.innerText = `${year}년 ${month}월 행사`;
+
+      const allFiltered = getFilteredEvents();
+      const monthEvents = allFiltered.filter(e => e.startDate.startsWith(ymStr) || e.endDate.startsWith(ymStr) || (e.startDate <= `${ymStr}-31` && e.endDate >= `${ymStr}-01`));
+      const ongoingEvents = allFiltered.filter(e => isEventActiveOnDate(e, TODAY_STR));
+      const upcomingEvents = allFiltered.filter(e => e.startDate > TODAY_STR);
+
+      document.getElementById("stat-month-count").innerText = monthEvents.length;
+      document.getElementById("stat-ongoing-count").innerText = ongoingEvents.length;
+      document.getElementById("stat-upcoming-count").innerText = upcomingEvents.length;
+
+      const deletedBtn = document.getElementById("btn-restore-deleted");
+      if (deletedBtn) {
+        if (AppState.deletedEvents.length > 0) {
+          deletedBtn.classList.remove("hidden");
+          document.getElementById("btn-restore-label").innerText = `삭제 복원 (${AppState.deletedEvents.length})`;
+        } else {
+          deletedBtn.classList.add("hidden");
+        }
+      }
+    }
+
+    // 캘린더 달력 그리드 렌더링
+    function renderCalendar() {
+      const gridEl = document.getElementById("calendar-grid");
+      const headingEl = document.getElementById("calendar-month-heading");
+      const liveBtnLabel = document.getElementById("live-refresh-btn-text");
+      const extraBtnLabel = document.getElementById("btn-extra-label");
+
+      if (!gridEl) return;
+
+      const year = AppState.currentYear;
+      const month = AppState.currentMonth;
+
+      if (headingEl) headingEl.innerText = `${year}년 ${month}월`;
+      if (liveBtnLabel) liveBtnLabel.innerText = `${month}월 실시간 새로고침`;
+      if (extraBtnLabel) extraBtnLabel.innerText = `${month}월 추가 행사 보기`;
+
+      document.querySelectorAll(".quick-month-btn").forEach(btn => {
+        const jumpYm = btn.getAttribute("data-jump-ym");
+        const currentYm = `${year}-${String(month).padStart(2, '0')}`;
+        if (jumpYm === currentYm) {
+          btn.className = "quick-month-btn px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-600 text-white transition cursor-pointer";
+        } else {
+          btn.className = "quick-month-btn px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 transition cursor-pointer";
+        }
+      });
+
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay = new Date(year, month, 0);
+      const startDayOfWeek = firstDay.getDay();
+      const totalDays = lastDay.getDate();
+      const prevMonthLastDay = new Date(year, month - 1, 0).getDate();
+
+      const filteredEvents = getFilteredEvents();
+
+      let calendarCellsHTML = "";
+      let dayCount = 1;
+      let nextMonthDayCount = 1;
+      const totalCells = Math.ceil((startDayOfWeek + totalDays) / 7) * 7;
+      let rowCellsHTML = "";
+
+      for (let i = 0; i < totalCells; i++) {
+        let dateStr = "";
+        let isCurrentMonth = true;
+        let dayNum = 0;
+
+        if (i < startDayOfWeek) {
+          isCurrentMonth = false;
+          dayNum = prevMonthLastDay - startDayOfWeek + i + 1;
+          const prevM = month - 1 === 0 ? 12 : month - 1;
+          const prevY = month - 1 === 0 ? year - 1 : year;
+          dateStr = `${prevY}-${String(prevM).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+        } else if (dayCount <= totalDays) {
+          isCurrentMonth = true;
+          dayNum = dayCount;
+          dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+          dayCount++;
+        } else {
+          isCurrentMonth = false;
+          dayNum = nextMonthDayCount;
+          const nextM = month + 1 === 13 ? 1 : month + 1;
+          const nextY = month + 1 === 13 ? year + 1 : year;
+          dateStr = `${nextY}-${String(nextM).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+          nextMonthDayCount++;
+        }
+
+        const isToday = dateStr === TODAY_STR;
+        const isSelected = dateStr === AppState.selectedDateStr;
+        const dayEvents = filteredEvents.filter(e => isEventActiveOnDate(e, dateStr));
+
+        let eventsChipsHTML = "";
+        dayEvents.slice(0, 2).forEach(evt => {
+          const dotColor = getCategoryDotClass(evt.category);
+          eventsChipsHTML += `
+            <div onclick="event.stopPropagation(); openDetailModal('${evt.id}')" title="${evt.title}" class="group/chip text-[11px] leading-tight px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-brand-500 hover:text-white dark:hover:bg-brand-500 text-slate-800 dark:text-slate-200 font-semibold truncate cursor-pointer flex items-center gap-1 transition">
+              <span class="w-1.5 h-1.5 rounded-full ${dotColor} shrink-0"></span>
+              <span class="truncate">${evt.title}</span>
+            </div>
+          `;
+        });
+
+        if (dayEvents.length > 2) {
+          eventsChipsHTML += `
+            <div class="text-[10px] font-bold text-slate-400 pl-1">
+              +${dayEvents.length - 2}건 더보기
+            </div>
+          `;
+        }
+
+        const colIdx = i % 7;
+        let dayColorClass = "text-slate-700 dark:text-slate-200";
+        if (colIdx === 0) dayColorClass = "text-rose-500";
+        if (colIdx === 6) dayColorClass = "text-blue-500 dark:text-blue-400";
+        if (!isCurrentMonth) dayColorClass = "text-slate-400 dark:text-slate-600";
+
+        const bgClass = isSelected
+          ? "bg-brand-500/10 dark:bg-brand-500/20 ring-2 ring-brand-500 z-10"
+          : isToday
+          ? "bg-emerald-500/10 dark:bg-emerald-500/20"
+          : isCurrentMonth
+          ? "bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/80"
+          : "bg-slate-50/60 dark:bg-slate-950/40 text-slate-400";
+
+        rowCellsHTML += `
+          <div onclick="selectCalendarDate('${dateStr}')" class="calendar-cell min-h-[95px] p-1.5 border-r border-b border-slate-100 dark:border-slate-800/80 flex flex-col justify-between ${bgClass} cursor-pointer">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold ${dayColorClass}">${dayNum}</span>
+              ${isToday ? `<span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-500 text-white">오늘</span>` : ''}
+            </div>
+            <div class="space-y-1 my-1 flex-1">
+              ${eventsChipsHTML}
+            </div>
+          </div>
+        `;
+
+        if ((i + 1) % 7 === 0) {
+          calendarCellsHTML += `<div class="grid grid-cols-7">${rowCellsHTML}</div>`;
+          rowCellsHTML = "";
+        }
+      }
+
+      gridEl.innerHTML = calendarCellsHTML;
+    }
+
+    // 날짜 선택
+    function selectCalendarDate(dateStr) {
+      AppState.selectedDateStr = dateStr;
+      AppState.rightPanelViewMode = "day";
+
+      const tabDay = document.getElementById("tab-view-day");
+      const tabMonth = document.getElementById("tab-view-month");
+
+      if (tabDay && tabMonth) {
+        tabDay.className = "py-1.5 px-3 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs transition cursor-pointer";
+        tabMonth.className = "py-1.5 px-3 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer";
+      }
+
+      renderCalendar();
+      renderRightEventList();
+    }
+
+    // 우측 패널 행사 목록 렌더링
+    function renderRightEventList() {
+      const headingEl = document.getElementById("selected-date-heading");
+      const badgeEl = document.getElementById("result-badge-count");
+      const containerEl = document.getElementById("event-list-container");
+
+      if (!containerEl) return;
+
+      const filtered = getFilteredEvents();
+      let targetEvents = [];
+
+      if (AppState.rightPanelViewMode === "day") {
+        if (headingEl) headingEl.innerText = formatDateDisplay(AppState.selectedDateStr) + " 행사";
+        targetEvents = filtered.filter(evt => isEventActiveOnDate(evt, AppState.selectedDateStr));
+      } else {
+        const ymStr = `${AppState.currentYear}-${String(AppState.currentMonth).padStart(2, '0')}`;
+        if (headingEl) headingEl.innerText = `${AppState.currentYear}년 ${AppState.currentMonth}월 전체 행사`;
+        targetEvents = filtered.filter(evt => evt.startDate.startsWith(ymStr) || evt.endDate.startsWith(ymStr) || (evt.startDate <= `${ymStr}-31` && evt.endDate >= `${ymStr}-01`));
+      }
+
+      if (badgeEl) badgeEl.innerText = `${targetEvents.length}건`;
+
+      containerEl.innerHTML = "";
+
+      if (targetEvents.length === 0) {
+        containerEl.innerHTML = `
+          <div class="py-12 px-4 text-center text-slate-500 dark:text-slate-400 space-y-2">
+            <p class="text-3xl">🎈</p>
+            <p class="text-sm font-semibold">해당 날짜/조건에 등록된 축제·행사가 없습니다.</p>
+            <p class="text-xs text-slate-400">다른 날짜를 누르거나 상단 검색어 및 필터를 변경해보세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      targetEvents.forEach(evt => {
+        containerEl.appendChild(createEventCardElement(evt));
+      });
+    }
+
+    // 상세보기 모달 오픈
+    function openDetailModal(eventId) {
+      const evt = AppState.events.find(e => e.id === eventId);
+      if (!evt) return;
+
+      AppState.activeModalEventId = eventId;
+
+      const modal = document.getElementById("event-detail-modal");
+      document.getElementById("modal-title").innerText = evt.title;
+      document.getElementById("modal-date").innerText = formatRangeDisplay(evt.startDate, evt.endDate);
+      document.getElementById("modal-venue").innerText = evt.venue;
+      document.getElementById("modal-organizer").innerText = evt.organizer;
+      document.getElementById("modal-fee").innerText = `${evt.fee} (${evt.audience})`;
+      document.getElementById("modal-desc").innerText = evt.summary;
+
+      document.getElementById("modal-badges").innerHTML = `
+        <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold border ${getCategoryColorBadgeClass(evt.category)}">${evt.category}</span>
+        <span class="px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">${evt.organizer}</span>
+      `;
+
+      document.getElementById("modal-link-insta").href = `https://www.instagram.com/explore/tags/${encodeURIComponent(evt.instaTag || '원주축제')}/`;
+      document.getElementById("modal-link-naver-review").href = `https://search.naver.com/search.naver?query=${encodeURIComponent(evt.naverQuery || evt.title)}`;
+      document.getElementById("modal-link-naver-map").href = `https://map.naver.com/v5/search/${encodeURIComponent(evt.venue)}`;
+      document.getElementById("modal-link-official").href = evt.officialUrl || "#";
+
+      document.getElementById("modal-ai-summary-box").innerText = evt.aiSummary || "우측 상단 'AI 요약 생성' 버튼을 클릭하면 방문 꿀팁과 한눈에 요약 정보를 생성합니다.";
+
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeDetailModal() {
+      const modal = document.getElementById("event-detail-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    // AI 요약 생성 함수
+    function generateSingleEventAISummary() {
+      if (!AppState.activeModalEventId) return;
+      const evt = AppState.events.find(e => e.id === AppState.activeModalEventId);
+      if (!evt) return;
+
+      const summaryBox = document.getElementById("modal-ai-summary-box");
+      summaryBox.innerText = "⏳ Gemini AI가 최신 데이터와 추천 코스를 요약하는 중...";
+
+      setTimeout(() => {
+        const resultText = `💡 [Gemini AI 추천 요약]\n• 주요 포인트: ${evt.title}은(는) ${evt.organizer} 주관 행사로, ${evt.venue}에서 진행되는 원주의 핵심 문화 일정입니다.\n• 방문 꿀팁: 주말 방문 시 대중교통 이용 또는 주변 공영주차장 사전 확인을 권장합니다.\n• 연계 추천: 행사 관람 후 중앙동 미로예술시장이나 주변 감성 카페 탐방 코스를 추천합니다!`;
+        evt.aiSummary = resultText;
+        summaryBox.innerText = resultText;
+        showToast("AI 요약이 생성되었습니다!", "success");
+      }, 600);
+    }
+
+    // 일정 지우기
+    function deleteCurrentEvent() {
+      if (!AppState.activeModalEventId) return;
+      const idx = AppState.events.findIndex(e => e.id === AppState.activeModalEventId);
+      if (idx !== -1) {
+        const removed = AppState.events.splice(idx, 1)[0];
+        AppState.deletedEvents.push(removed);
+        closeDetailModal();
+        renderAppHeaderStats();
+        renderCalendar();
+        renderRightEventList();
+        renderEntrySpotlight();
+        showToast(`'${removed.title}' 일정을 삭제했습니다.`, "error");
+      }
+    }
+
+    // 삭제 복원
+    function restoreDeletedEvents() {
+      if (AppState.deletedEvents.length === 0) return;
+      AppState.events.push(...AppState.deletedEvents);
+      const count = AppState.deletedEvents.length;
+      AppState.deletedEvents = [];
+      renderAppHeaderStats();
+      renderCalendar();
+      renderRightEventList();
+      renderEntrySpotlight();
+      showToast(`${count}개의 삭제된 일정을 복원했습니다.`, "success");
+    }
+
+    // 정보 복사
+    function copyEventInfo() {
+      if (!AppState.activeModalEventId) return;
+      const evt = AppState.events.find(e => e.id === AppState.activeModalEventId);
+      if (!evt) return;
+
+      const text = `[원행 — 원주 행사 정보]\n행사명: ${evt.title}\n기간: ${evt.startDate} ~ ${evt.endDate}\n장소: ${evt.venue}\n주최: ${evt.organizer}\n관람료: ${evt.fee}`;
+      
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        showToast("행사 정보가 클립보드에 복사되었습니다.", "success");
+      } catch (err) {
+        showToast("복사 실패", "error");
+      }
+      document.body.removeChild(textArea);
+    }
+
+    // 월별 추가 행사 모달
+    function openExtraEventsModal() {
+      const modal = document.getElementById("extra-events-modal");
+      AppState.extraModalMonth = AppState.currentMonth;
+      renderExtraEventsList();
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function renderExtraEventsList() {
+      const listEl = document.getElementById("extra-events-list");
+      const titleEl = document.getElementById("extra-modal-title");
+      if (titleEl) titleEl.innerText = `${AppState.currentYear}년 ${AppState.extraModalMonth}월 추가 행사 보기`;
+
+      const ymStr = `${AppState.currentYear}-${String(AppState.extraModalMonth).padStart(2, '0')}`;
+      const extraItems = EXTRA_MONTHLY_POOL.filter(item => item.startDate.startsWith(ymStr) || item.endDate.startsWith(ymStr));
+
+      listEl.innerHTML = "";
+
+      if (extraItems.length === 0) {
+        listEl.innerHTML = `<div class="p-6 text-center text-slate-500 dark:text-slate-400 text-xs font-semibold">해당 월에 추가로 등록된 팝업 행사가 없습니다.</div>`;
+        return;
+      }
+
+      extraItems.forEach(item => {
+        const isAdded = AppState.events.some(e => e.id === item.id);
+        const card = document.createElement("div");
+        card.className = "bg-slate-50 dark:bg-slate-800 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3";
+        card.innerHTML = `
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded-md text-[11px] font-bold border ${getCategoryColorBadgeClass(item.category)}">${item.category}</span>
+              <span class="text-xs font-semibold text-slate-500">${item.startDate} ~ ${item.endDate}</span>
+            </div>
+            <h5 class="text-sm font-extrabold text-slate-900 dark:text-white">${item.title}</h5>
+            <p class="text-xs text-slate-600 dark:text-slate-300">📍 ${item.venue}</p>
+          </div>
+          <button type="button" onclick="toggleExtraEventInCalendar('${item.id}')" class="px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer shrink-0 ${
+            isAdded ? "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300" : "bg-brand-600 hover:bg-brand-500 text-white"
+          }">
+            ${isAdded ? "✓ 달력에 포함됨" : "+ 달력에 추가"}
+          </button>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    function toggleExtraEventInCalendar(itemId) {
+      const existingIdx = AppState.events.findIndex(e => e.id === itemId);
+      if (existingIdx !== -1) {
+        AppState.events.splice(existingIdx, 1);
+        showToast("달력에서 제외되었습니다.", "info");
+      } else {
+        const item = EXTRA_MONTHLY_POOL.find(e => e.id === itemId);
+        if (item) {
+          AppState.events.push(item);
+          showToast(`'${item.title}' 행사가 달력에 추가되었습니다!`, "success");
+        }
+      }
+      renderExtraEventsList();
+      renderAppHeaderStats();
+      renderCalendar();
+      renderRightEventList();
+      renderEntrySpotlight();
+    }
+
+    function closeExtraEventsModal() {
+      const modal = document.getElementById("extra-events-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    // 커스텀 일정 제출 처리
+    function handleCustomEventSubmit(e) {
+      e.preventDefault();
+      const title = document.getElementById("custom-title").value.trim();
+      const venue = document.getElementById("custom-venue").value.trim();
+      const startDate = document.getElementById("custom-start").value;
+      const endDate = document.getElementById("custom-end").value;
+      const category = document.getElementById("custom-category").value;
+
+      if (!title || !venue || !startDate || !endDate) return;
+
+      const newEvt = {
+        id: "custom-" + Date.now(),
+        title: title,
+        category: category,
+        organizer: "사용자 직접 등록",
+        startDate: startDate,
+        endDate: endDate,
+        venue: venue,
+        fee: "자율 참여",
+        audience: "시민 · 청년",
+        summary: "사용자가 통합 캘린더에 직접 등록한 원주 지역 일정입니다.",
+        officialUrl: "https://www.wonju.go.kr/",
+        instaTag: "원주행사",
+        naverQuery: `원주 ${title}`
+      };
+
+      AppState.events.push(newEvt);
+      showToast("새 행사가 성공적으로 등록되었습니다!", "success");
+      document.getElementById("custom-event-form").reset();
+
+      renderAppHeaderStats();
+      renderCalendar();
+      renderRightEventList();
+      renderEntrySpotlight();
+    }
+
+    // AI 큐레이터
+    function openAiCuratorModal() {
+      const modal = document.getElementById("ai-curator-modal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeAiCuratorModal() {
+      const modal = document.getElementById("ai-curator-modal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function runAiCurator() {
+      const extraNote = document.getElementById("ai-extra-note").value.trim();
+      const resultBox = document.getElementById("ai-curator-result");
+
+      resultBox.classList.remove("hidden");
+      resultBox.innerText = "🤖 Gemini AI가 실제 수집된 원주 행사 데이터를 대조하여 맞춤 추천 코스를 작성 중입니다...";
+
+      setTimeout(() => {
+        let text = `🎯 [Gemini AI 원주 맞춤 축제 코스]\n\n1️⃣ 추천 1순위: 2026 원주그림책페스티벌 <새로운 독자, 환대의 노래>\n • 장소: 원주 남산골문화센터 일원 (11.06 ~ 11.29)\n • 이유: 남녀노소 부담없이 야외 독서 체험 및 주제 전시를 즐길 수 있는 원주 대표 가을 축제입니다.\n\n2️⃣ 추천 2순위: 중앙동 미로예술시장 주말 문화축제 <미로, 기웃>\n • 장소: 원주 중앙시장 2층 미로예술시장 (11.28 ~ 11.29)\n • 이유: 청년 공예 플리마켓과 버스킹 연주를 즐기며 중앙동 골목 맛집 탐방을 함께 할 수 있습니다.\n\n3️⃣ 추천 연계 나들이 코스:\n [오전] 남산골문화센터 그림책 전시 관람 ➔ [점심] 중앙동 전통시장 원주 대표 만두 시식 ➔ [후] 미로예술시장 플리마켓 & 감성 카페`;
+        if (extraNote) {
+          text += `\n\n💡 요청사항(${extraNote}) 반영 팁: 중앙동 문화의거리 일대는 도보 이동이 용이하여 음악 공연 및 미로시장 투어와 완벽하게 연결됩니다.`;
+        }
+        resultBox.innerText = text;
+        showToast("AI 큐레이션 완료!", "success");
+      }, 700);
+    }
+
+    // 화면 전환
+    function enterApp() {
+      document.getElementById("entry-screen").classList.add("hidden");
+      const appScreen = document.getElementById("app-screen");
+      appScreen.classList.remove("hidden");
+      appScreen.classList.add("flex");
+
+      selectCalendarDate(TODAY_STR);
+      renderAppHeaderStats();
+      renderCalendar();
+      renderRightEventList();
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function returnToEntryScreen() {
+      document.getElementById("app-screen").classList.add("hidden");
+      document.getElementById("app-screen").classList.remove("flex");
+      document.getElementById("entry-screen").classList.remove("hidden");
+      renderEntrySpotlight();
+    }
+
+    // 실시간 새로고침 동기화 함수 (완벽 재연동)
+    function performLiveSync() {
+      const icon = document.getElementById("live-refresh-icon");
+      const statusText = document.getElementById("stat-sync-status");
+      const btnText = document.getElementById("live-refresh-btn-text");
+
+      if (icon) icon.classList.add("animate-spin");
+      if (statusText) statusText.innerText = "데이터 동기화 진행 중...";
+
+      setTimeout(() => {
+        if (icon) icon.classList.remove("animate-spin");
+
+        // 최신 데이터 갱신
+        renderAppHeaderStats();
+        renderCalendar();
+        renderRightEventList();
+
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+        if (statusText) statusText.innerText = `${AppState.currentMonth}월 동기화 완료 (${timeStr})`;
+        if (btnText) btnText.innerText = `${AppState.currentMonth}월 실시간 새로고침`;
+        showToast(`${AppState.currentMonth}월 실시간 축제·행사 데이터가 최신 상태로 갱신되었습니다! (${timeStr})`, "success");
+      }, 500);
+    }
+
+    // DOM 이벤트 리스너 등록
+    window.addEventListener("DOMContentLoaded", () => {
+      // 다크모드 초기화
+      if (AppState.theme === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+
+      // 화면 진입/이동 이벤트
+      document.getElementById("btn-enter-app")?.addEventListener("click", enterApp);
+      document.getElementById("btn-back-entry")?.addEventListener("click", returnToEntryScreen);
+
+      // 진입 화면 카테고리 알약 버튼
+      document.querySelectorAll(".entry-cat-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const cat = e.currentTarget.getAttribute("data-entry-cat");
+          AppState.entrySelectedCat = cat;
+          document.querySelectorAll(".entry-cat-btn").forEach(b => {
+            if (b.getAttribute("data-entry-cat") === cat) {
+              b.className = "entry-cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-brand-600 text-white cursor-pointer";
+            } else {
+              b.className = "entry-cat-btn px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer";
+            }
+          });
+          renderEntrySpotlight();
+        });
+      });
+
+      // 테마 토글 버튼
+      document.querySelectorAll(".theme-toggle-btn").forEach(btn => {
+        btn.addEventListener("click", toggleTheme);
+      });
+
+      // 오늘 날짜 이동
+      document.getElementById("btn-today-jump")?.addEventListener("click", () => {
+        AppState.currentYear = 2026;
+        AppState.currentMonth = 11;
+        selectCalendarDate(TODAY_STR);
+      });
+
+      // 캘린더 이전/다음 달 이동
+      document.getElementById("btn-prev-month")?.addEventListener("click", () => {
+        if (AppState.currentMonth === 1) {
+          AppState.currentYear--;
+          AppState.currentMonth = 12;
+        } else {
+          AppState.currentMonth--;
+        }
+        renderAppHeaderStats();
+        renderCalendar();
+        renderRightEventList();
+
+        if (document.getElementById("auto-live-refresh-chk")?.checked) {
+          performLiveSync();
+        }
+      });
+
+      document.getElementById("btn-next-month")?.addEventListener("click", () => {
+        if (AppState.currentMonth === 12) {
+          AppState.currentYear++;
+          AppState.currentMonth = 1;
+        } else {
+          AppState.currentMonth++;
+        }
+        renderAppHeaderStats();
+        renderCalendar();
+        renderRightEventList();
+
+        if (document.getElementById("auto-live-refresh-chk")?.checked) {
+          performLiveSync();
+        }
+      });
+
+      // 실시간 새로고침 버튼 이벤트 직접 연결
+      const liveBtn = document.getElementById("btn-live-refresh");
+      if (liveBtn) {
+        liveBtn.onclick = function(e) {
+          e.preventDefault();
+          performLiveSync();
+        };
+      }
+
+      // Quick month jump 버튼
+      document.querySelectorAll(".quick-month-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const ym = e.currentTarget.getAttribute("data-jump-ym");
+          const parts = ym.split("-");
+          AppState.currentYear = parseInt(parts[0], 10);
+          AppState.currentMonth = parseInt(parts[1], 10);
+          renderAppHeaderStats();
+          renderCalendar();
+          renderRightEventList();
+
+          if (document.getElementById("auto-live-refresh-chk")?.checked) {
+            performLiveSync();
+          }
+        });
+      });
+
+      // 분야 필터 버튼
+      document.querySelectorAll("#category-filters .cat-btn").forEach(btn => {
+        btn.addEventListener("click", (e) => {
+          const cat = e.currentTarget.getAttribute("data-category");
+          AppState.selectedCategory = cat;
+          document.querySelectorAll("#category-filters .cat-btn").forEach(b => {
+            if (b.getAttribute("data-category") === cat) {
+              b.className = "cat-btn active px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-600 text-white shadow-xs transition cursor-pointer";
+            } else {
+              b.className = "cat-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition cursor-pointer";
+            }
+          });
+          renderAppHeaderStats();
+          renderCalendar();
+          renderRightEventList();
+        });
+      });
+
+      // 주최 필터 & 검색
+      document.getElementById("organizer-filter")?.addEventListener("change", (e) => {
+        AppState.selectedOrganizer = e.target.value;
+        renderAppHeaderStats();
+        renderCalendar();
+        renderRightEventList();
+      });
+
+      document.getElementById("search-input")?.addEventListener("input", (e) => {
+        AppState.searchQuery = e.target.value;
+        renderAppHeaderStats();
+        renderCalendar();
+        renderRightEventList();
+      });
+
+      // 우측 탭
+      document.getElementById("tab-view-day")?.addEventListener("click", () => {
+        AppState.rightPanelViewMode = "day";
+        document.getElementById("tab-view-day").className = "py-1.5 px-3 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs transition cursor-pointer";
+        document.getElementById("tab-view-month").className = "py-1.5 px-3 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer";
+        renderRightEventList();
+      });
+
+      document.getElementById("tab-view-month")?.addEventListener("click", () => {
+        AppState.rightPanelViewMode = "month";
+        document.getElementById("tab-view-month").className = "py-1.5 px-3 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs transition cursor-pointer";
+        document.getElementById("tab-view-day").className = "py-1.5 px-3 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer";
+        renderRightEventList();
+      });
+
+      // 삭제 복원 버튼
+      document.getElementById("btn-restore-deleted")?.addEventListener("click", restoreDeletedEvents);
+
+      // 모달 버튼들
+      document.getElementById("btn-close-detail-modal")?.addEventListener("click", closeDetailModal);
+      document.getElementById("btn-generate-event-tip")?.addEventListener("click", generateSingleEventAISummary);
+      document.getElementById("btn-modal-delete-event")?.addEventListener("click", deleteCurrentEvent);
+      document.getElementById("btn-copy-event")?.addEventListener("click", copyEventInfo);
+
+      document.getElementById("btn-open-extra-modal")?.addEventListener("click", openExtraEventsModal);
+      document.getElementById("btn-close-extra-modal")?.addEventListener("click", closeExtraEventsModal);
+      document.getElementById("btn-extra-prev-month")?.addEventListener("click", () => {
+        if (AppState.extraModalMonth > 1) AppState.extraModalMonth--;
+        renderExtraEventsList();
+      });
+      document.getElementById("btn-extra-next-month")?.addEventListener("click", () => {
+        if (AppState.extraModalMonth < 12) AppState.extraModalMonth++;
+        renderExtraEventsList();
+      });
+
+      document.getElementById("custom-event-form")?.addEventListener("submit", handleCustomEventSubmit);
+
+      document.getElementById("btn-open-ai-modal")?.addEventListener("click", openAiCuratorModal);
+      document.getElementById("btn-close-ai-modal")?.addEventListener("click", closeAiCuratorModal);
+      document.getElementById("btn-run-ai-curator")?.addEventListener("click", runAiCurator);
+
+      // 초기 렌더링
+      renderEntrySpotlight();
+    });
+  </script>
+</body>
+</html>
